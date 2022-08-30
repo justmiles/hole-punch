@@ -9,17 +9,16 @@ import (
 
 	_ "embed"
 
-	"golang.org/x/crypto/ssh"
 	gossh "golang.org/x/crypto/ssh"
 )
 
 // publicKeys returns auth with given private key
-func publicKey(key []byte) (ssh.AuthMethod, error) {
+func publicKey(key []byte) (gossh.AuthMethod, error) {
 	keys, err := gossh.ParsePrivateKey(key)
 	if err != nil {
 		return nil, fmt.Errorf("Cannot extract SSH public key from private")
 	}
-	return ssh.PublicKeys(keys), nil
+	return gossh.PublicKeys(keys), nil
 }
 
 func reversessh(hp *HolePunch) {
@@ -30,14 +29,14 @@ func reversessh(hp *HolePunch) {
 		os.Exit(1)
 	}
 
-	sshConfig := &ssh.ClientConfig{
+	sshConfig := &gossh.ClientConfig{
 		User:            hp.RemoteEndpoint.User,
-		Auth:            []ssh.AuthMethod{publicKeyAuth},
-		HostKeyCallback: ssh.InsecureIgnoreHostKey(),
+		Auth:            []gossh.AuthMethod{publicKeyAuth},
+		HostKeyCallback: gossh.InsecureIgnoreHostKey(),
 	}
 
 	// Connect to SSH remote server using serverEndpoint
-	serverConn, err := ssh.Dial("tcp", hp.RemoteEndpoint.Address(), sshConfig)
+	serverConn, err := gossh.Dial("tcp", hp.RemoteEndpoint.Address(), sshConfig)
 	if err != nil {
 		log.Printf("[remote endpoint] %s", err)
 		os.Exit(1)
@@ -48,6 +47,7 @@ func reversessh(hp *HolePunch) {
 	listener, err := serverConn.Listen("tcp", hp.TunnelEndpoint.Address())
 	if err != nil {
 		log.Printf("[tunnel endpoint] %s", err)
+		os.Exit(1)
 	}
 	log.Printf("[tunnel endpoint] created %s <--- %s", hp.TunnelEndpoint.Address(), hp.RemoteEndpoint.Address())
 	defer listener.Close()
